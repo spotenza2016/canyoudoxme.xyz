@@ -1,0 +1,75 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+using namespace std;
+
+template<typename location>
+class LocationAdjacencyGraph {
+private:
+    struct Node {
+        vector<Node*> adjacencyList;
+        vector<int> distance;
+        location storedLocation;
+    };
+    vector<Node*> vertices;
+    Node* getClosestNode(location insertedLocation) {
+        int minimum;
+        Node* closest = nullptr;
+        for (int i = 0; i < vertices; i++) {
+            int distance = vertices.at(i)->storedLocation - insertedLocation;
+            if (i == 0 || distance < minimum) {
+                minimum = distance;
+                closest = vertices.at(i);
+            }
+        }
+        return closest;
+    }
+public:
+    void addLocation(location insertedLocation) {
+        Node* closest = getClosestNode(insertedLocation);
+        if (closest == nullptr) {
+            Node* currentNode = new Node;
+            currentNode->storedLocation = insertedLocation;
+            vertices.push_back(currentNode);
+        } else if (closest->storedLocation == insertedLocation) {
+            closest->adjacencyList.push_back(closest);
+            closest->distance.push_back(0);
+        } else {
+            Node* currentNode = new Node;
+            currentNode->storedLocation = insertedLocation;
+            currentNode->adjacencyList.push_back(closest);
+            closest->adjacencyList.push_back(currentNode);
+            int distance = closest->storedLocation - insertedLocation;
+            currentNode->distance.push_back(distance);
+            closest->distance.push_back(distance);
+        }
+    }
+
+    Node* getCentralLocation() {
+        Node* central = nullptr;
+        for (int i = 0; i < vertices.size(); i++) {
+            if (i == 0 || vertices.at(i)->adjacencyList.size() > central->adjacencyList.size()) {
+                central = vertices.at(i);
+            } else if (vertices.at(i)->adjacencyList.size() == central->adjacencyList.size()) {
+                int currentTotal = 0;
+                for (int j = 0; j < vertices.at(i)->distance.size(); j++) {
+                    currentTotal += vertices.at(i)->distance.at(j);
+                }
+                int centralTotal = 0;
+                for (int j = 0; j < central->distance.size(); j++) {
+                    centralTotal += central->distance.at(j);
+                }
+                if (currentTotal < centralTotal) {
+                    central = vertices.at(i);
+                }
+            }
+        }
+        return central;
+    }
+};
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}
