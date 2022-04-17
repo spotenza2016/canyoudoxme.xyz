@@ -26,6 +26,12 @@ private:
         return closest;
     }
 public:
+    ~LocationAdjacencyGraph() {
+        for (int i = 0; i < vertices; i++) {
+            delete vertices.at(i);
+        }
+    }
+
     void addLocation(location insertedLocation) {
         Node* closest = getClosestNode(insertedLocation);
         if (closest == nullptr) {
