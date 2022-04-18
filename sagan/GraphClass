@@ -1,23 +1,16 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-using namespace std;
-
-template<typename location>
 class LocationAdjacencyGraph {
 private:
     struct Node {
         vector<Node*> adjacencyList;
-        vector<int> distance;
-        location storedLocation;
+        vector<double> distance;
+        pair<double, double> storedLocation;
     };
     vector<Node*> vertices;
-    Node* getClosestNode(location insertedLocation) {
-        int minimum;
+    Node* getClosestNode(pair<double, double> insertedLocation) {
+        double minimum;
         Node* closest = nullptr;
-        for (int i = 0; i < vertices; i++) {
-            int distance = vertices.at(i)->storedLocation - insertedLocation;
+        for (int i = 0; i < vertices.size(); i++) {
+            double distance = distanceBetween(vertices.at(i)->storedLocation, insertedLocation);
             if (i == 0 || distance < minimum) {
                 minimum = distance;
                 closest = vertices.at(i);
@@ -25,14 +18,15 @@ private:
         }
         return closest;
     }
+
 public:
     ~LocationAdjacencyGraph() {
-        for (int i = 0; i < vertices; i++) {
+        for (int i = 0; i < vertices.size(); i++) {
             delete vertices.at(i);
         }
     }
 
-    void addLocation(location insertedLocation) {
+    void addLocation(pair<double, double> insertedLocation) {
         Node* closest = getClosestNode(insertedLocation);
         if (closest == nullptr) {
             Node* currentNode = new Node;
@@ -46,23 +40,23 @@ public:
             currentNode->storedLocation = insertedLocation;
             currentNode->adjacencyList.push_back(closest);
             closest->adjacencyList.push_back(currentNode);
-            int distance = closest->storedLocation - insertedLocation;
+            double distance = distanceBetween(closest->storedLocation, insertedLocation);
             currentNode->distance.push_back(distance);
             closest->distance.push_back(distance);
         }
     }
 
-    Node* getCentralLocation() {
+    vector<pair<double, double>> getCentralLocation() {
         Node* central = nullptr;
         for (int i = 0; i < vertices.size(); i++) {
             if (i == 0 || vertices.at(i)->adjacencyList.size() > central->adjacencyList.size()) {
                 central = vertices.at(i);
             } else if (vertices.at(i)->adjacencyList.size() == central->adjacencyList.size()) {
-                int currentTotal = 0;
+                double currentTotal = 0;
                 for (int j = 0; j < vertices.at(i)->distance.size(); j++) {
                     currentTotal += vertices.at(i)->distance.at(j);
                 }
-                int centralTotal = 0;
+                double centralTotal = 0;
                 for (int j = 0; j < central->distance.size(); j++) {
                     centralTotal += central->distance.at(j);
                 }
@@ -71,11 +65,13 @@ public:
                 }
             }
         }
-        return central;
+        vector<pair<double, double>> locations;
+        locations.push_back(central->storedLocation);
+
+        for (int i = 0; i < central->adjacencyList.size(); i++) {
+            locations.push_back(central->adjacencyList.at(i)->storedLocation);
+        }
+
+        return locations;
     }
 };
-
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
-}
