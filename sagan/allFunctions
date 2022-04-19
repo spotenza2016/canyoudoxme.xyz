@@ -2,259 +2,455 @@
 #include <tuple>
 #include <string>
 #include <fstream>
-#include <sstream>
 #include <iostream>
 #include <cmath>
 #include <chrono>
 using namespace std;
 
-double distanceBetween(pair<double, double> lhs, pair<double, double> rhs);
+//Header for distance between function
+double distanceBetween(const pair<double, double>& lhs, const pair<double, double>& rhs);
 
+//Class for Adjacency Graph
 class LocationAdjacencyGraph {
+//Private members
 private:
+    //Basic node struct
     struct Node {
+        //Vector containing adjacent nodes and their distances
         vector<Node*> adjacencyList;
         vector<double> distance;
+
+        //Location of this vertex
         pair<double, double> storedLocation;
     };
+
+    //Vector of every vertex
     vector<Node*> vertices;
-    Node* getClosestNode(pair<double, double> insertedLocation) {
-        double minimum;
-        Node* closest = nullptr;
-        for (int i = 0; i < vertices.size(); i++) {
-            double distance = distanceBetween(vertices.at(i)->storedLocation, insertedLocation);
-            if (i == 0 || distance < minimum) {
-                minimum = distance;
-                closest = vertices.at(i);
+
+    //Gets the closest vertex to a given location
+    Node* getClosestNode(const pair<double, double>& insertedLocation) { //O(V) where V is the total number of location vertices in the graph
+        //Variables to store minimum node and its distance
+        double minimum; //O(1)
+        Node* closest = nullptr; //O(1)
+
+        //For every vertex in the graph
+        for (int i = 0; i < vertices.size(); i++) { //O(V) *
+            //Find the distance between them
+            double distance = distanceBetween(vertices.at(i)->storedLocation, insertedLocation); //O(1)
+
+            //If this is the first vertex or the distance is smaller than the current minimum
+            if (i == 0 || distance < minimum) { //O(1)
+                //Set the new minimum
+                minimum = distance; //O(1)
+                closest = vertices.at(i); //O(1)
             }
         }
-        return closest;
+
+        //Return that vertex
+        return closest; //O(1)
     }
 
+//Public members
 public:
-    ~LocationAdjacencyGraph() {
-        for (int i = 0; i < vertices.size(); i++) {
-            delete vertices.at(i);
+    //Destructor
+    ~LocationAdjacencyGraph() { //O(V)
+        //Deletes every vertex
+        for (int i = 0; i < vertices.size(); i++) { //O(V) *
+            delete vertices.at(i); //O(1)
         }
     }
 
-    void addLocation(pair<double, double> insertedLocation) {
-        Node* closest = getClosestNode(insertedLocation);
-        if (closest == nullptr) {
-            Node* currentNode = new Node;
-            currentNode->storedLocation = insertedLocation;
-            vertices.push_back(currentNode);
-        } else if (closest->storedLocation == insertedLocation) {
-            closest->adjacencyList.push_back(closest);
-            closest->distance.push_back(0);
-        } else {
-            Node* currentNode = new Node;
-            currentNode->storedLocation = insertedLocation;
-            currentNode->adjacencyList.push_back(closest);
-            closest->adjacencyList.push_back(currentNode);
-            double distance = distanceBetween(closest->storedLocation, insertedLocation);
-            currentNode->distance.push_back(distance);
-            closest->distance.push_back(distance);
+    //Adds a given coordinate location to the graph
+    void addLocation(const pair<double, double>& insertedLocation) { //O(V) where V is the total number of location vertices in the graph
+        //Get the closest node to the location
+        Node* closest = getClosestNode(insertedLocation); //O(V)
+
+        //If there is no other vertices in the graph
+        if (closest == nullptr) { //O(1)
+            //Create a new node
+            Node* currentNode = new Node; //O(1)
+
+            //Store the location in this node
+            currentNode->storedLocation = insertedLocation; //O(1)
+
+            //Stores the node in the vertex vector
+            vertices.push_back(currentNode); //O(1) or O(V) if resize
+        }
+        //Otherwise, if this is a unique location
+        else if (closest->storedLocation != insertedLocation) { //O(1)
+            //Create a new node
+            Node* currentNode = new Node; //O(1)
+
+            //Store the location in this node
+            currentNode->storedLocation = insertedLocation; //O(1)
+
+            //Add each node to the other's adjacency list
+            currentNode->adjacencyList.push_back(closest); //O(1)
+            closest->adjacencyList.push_back(currentNode); //O(1)
+
+            //Find the distance between them
+            double distance = distanceBetween(closest->storedLocation, insertedLocation); //O(1)
+
+            //Add this distance to each node's distance vector
+            currentNode->distance.push_back(distance); //O(1) or O(V) if resize
+            closest->distance.push_back(distance); //O(1) or O(V) if resize
         }
     }
 
-    vector<pair<double, double>> getCentralLocation() {
-        Node* central = nullptr;
-        for (int i = 0; i < vertices.size(); i++) {
-            if (i == 0 || vertices.at(i)->adjacencyList.size() > central->adjacencyList.size()) {
-                central = vertices.at(i);
-            } else if (vertices.at(i)->adjacencyList.size() == central->adjacencyList.size()) {
-                double currentTotal = 0;
-                for (int j = 0; j < vertices.at(i)->distance.size(); j++) {
-                    currentTotal += vertices.at(i)->distance.at(j);
+    //Calculates the most central vertex and its surrounding vertices
+    vector<pair<double, double>> getCentralLocation() { //O(V * c) where V is the total number of location vertices and c is the number of edges per vertex
+        //Store current most central vertex
+        Node* central = nullptr; //O(1)
+
+        //For every vertex
+        for (int i = 0; i < vertices.size(); i++) { //O(V) *
+            //If this is the first iteration, or if the  vertex has more edges than the current most central vertex
+            if (i == 0 || vertices.at(i)->adjacencyList.size() > central->adjacencyList.size()) { //O(1)
+                //Set this as the new most central vertex
+                central = vertices.at(i); //O(1)
+            }
+            //Otherwise, if there is a tie
+            else if (vertices.at(i)->adjacencyList.size() == central->adjacencyList.size()) { //O(1)
+                //Add up the distances for every edge in the current vertex
+                double currentTotal = 0; //O(1)
+                for (int j = 0; j < vertices.at(i)->distance.size(); j++) {  //O(c) *
+                    currentTotal += vertices.at(i)->distance.at(j); //O(1)
                 }
+
+                //Add up the distances for every edge in the central vertex
                 double centralTotal = 0;
-                for (int j = 0; j < central->distance.size(); j++) {
-                    centralTotal += central->distance.at(j);
+                for (int j = 0; j < central->distance.size(); j++) { //O(c) *
+                    centralTotal += central->distance.at(j); //O(1)
                 }
-                if (currentTotal < centralTotal) {
-                    central = vertices.at(i);
+
+                //If the current vertex has a lower total, set it as the new vertex
+                if (currentTotal < centralTotal) { //O(1)
+                    central = vertices.at(i); //O(1)
                 }
             }
         }
-        vector<pair<double, double>> locations;
-        locations.push_back(central->storedLocation);
 
-        for (int i = 0; i < central->adjacencyList.size(); i++) {
-            locations.push_back(central->adjacencyList.at(i)->storedLocation);
+        //Vector for every location
+        vector<pair<double, double>> locations; //O(1)
+
+        //Push back the most central location
+        locations.push_back(central->storedLocation); //O(1) or O(V) if resize
+
+        //Push back every location adjacent to the most central location
+        for (int i = 0; i < central->adjacencyList.size(); i++) { //O(c) *
+            locations.push_back(central->adjacencyList.at(i)->storedLocation); //O(1) or O(c) if resize
         }
 
-        return locations;
+        //Return the locations
+        return locations; //O(1)
     }
 };
 
-double distanceBetween(pair<double, double> lhs, pair<double, double> rhs) {
-    double latDif = (lhs.first - rhs.first) * M_PI / 180.0;
-    double longDif = (lhs.second - rhs.second) * M_PI / 180.0;
-    double lhsLatRad = lhs.first * M_PI / 180.0;
-    double rhsLatRad = rhs.first * M_PI / 180.0;
-    double a = pow(sin(latDif / 2), 2) + cos(lhsLatRad) * cos(rhsLatRad) * pow(sin(longDif / 2), 2);
+//Function that calculates the distance between two points given in decimal degrees
+double distanceBetween(const pair<double, double>& lhs, const pair<double, double>& rhs) { //O(1)
+    //Finds difference in latitude and longitude and converts to radians.
+    double latDif = (lhs.first - rhs.first) * M_PI / 180.0; //O(1)
+    double longDif = (lhs.second - rhs.second) * M_PI / 180.0; //O(1)
+
+    //Converts latitude of each to radians
+    double lhsLatRad = lhs.first * M_PI / 180.0; //O(1)
+    double rhsLatRad = rhs.first * M_PI / 180.0; //O(1)
+
+    //Radius of Earth in Miles
     double radius = 3961;
-    double c = 2 * asin(sqrt(a));
-    return radius * c;
+
+    //Calculates the Haversine Formula to find distance (from https://www.movable-type.co.uk/scripts/latlong.html)
+    double a = pow(sin(latDif / 2), 2) + cos(lhsLatRad) * cos(rhsLatRad) * pow(sin(longDif / 2), 2); //O(1)
+    double c = 2 * asin(sqrt(a)); //O(1)
+
+    //Returns resulting distance in miles
+    return radius * c; //O(1)
 }
 
-tuple<double, double, double> coordinatesToCartesian(pair<double, double> coordinates) {
-    double lat = coordinates.first * M_PI / 180.0;
-    double lon = coordinates.second * M_PI / 180.0;
-    double x = cos(lat) * cos(lon);
-    double y = cos(lat) * sin(lon);
-    double z = sin(lat);
-    return tuple<double, double, double>(x, y, z);
+//Function that converts latitude and longitude into cartesian coordinates (fraction of the radius)
+tuple<double, double, double> coordinatesToCartesian(const pair<double, double>& coordinates) { //O(1)
+    //Convert latitude and longitude into radians
+    double lat = coordinates.first * M_PI / 180.0; //O(1)
+    double lon = coordinates.second * M_PI / 180.0; //O(1)
+
+    //Get X, Y, and Z (from http://www.geomidpoint.com/calculation.html)
+    double x = cos(lat) * cos(lon); //O(1)
+    double y = cos(lat) * sin(lon); //O(1)
+    double z = sin(lat); //O(1)
+
+    //Return a tuple of the xyz coordinates
+    return tuple<double, double, double>(x, y, z); //O(1)
 }
 
-pair<double, double> cartesianToCoordinates(tuple<double, double, double> cartesian) {
-    double lon = atan2(get<1>(cartesian), get<0>(cartesian));
-    double hyp = sqrt(get<0>(cartesian) * get<0>(cartesian) + get<1>(cartesian) * get<1>(cartesian));
-    double lat = atan2(get<2>(cartesian), hyp);
-    lat = lat * 180 / M_PI;
-    lon = lon * 180 / M_PI;
-    return pair<double, double>(lat, lon);
+//Function that converts cartesian coordinates (fraction of the radius) into latitude and longitude
+pair<double, double> cartesianToCoordinates(const tuple<double, double, double>& cartesian) { //O(1)
+    //Calculate the longitude, hypotenuse, and latitude (from http://www.geomidpoint.com/calculation.html)
+    double lon = atan2(get<1>(cartesian), get<0>(cartesian)); //O(1)
+    double hyp = sqrt(get<0>(cartesian) * get<0>(cartesian) + get<1>(cartesian) * get<1>(cartesian)); //O(1)
+    double lat = atan2(get<2>(cartesian), hyp); //O(1)
+
+    //Convert from radians to decimal degrees
+    lat = lat * 180 / M_PI; //O(1)
+    lon = lon * 180 / M_PI; //O(1)
+
+    //Return a pair of the latitude and longitude
+    return pair<double, double>(lat, lon); //O(1)
 }
 
-pair<double, double> verticesToCenter(vector<pair<double, double>> vertices) {
-    double xTotal = 0;
-    double yTotal = 0;
-    double zTotal = 0;
-    for (int i = 0; i < vertices.size(); i++) {
-        tuple<double, double, double> xyzCoords = coordinatesToCartesian(vertices.at(i));
-        xTotal += get<0>(xyzCoords);
-        yTotal += get<1>(xyzCoords);
-        zTotal += get<2>(xyzCoords);
+//Function that calculates the geographic midpoint of a set of latitude and longitude coordinates
+pair<double, double> verticesToCenter(const vector<pair<double, double>>& vertices) { //O(v) where v is the number of vertices to be averaged
+    //Totals for cartesian coordinates
+    double xTotal = 0; //O(1)
+    double yTotal = 0; //O(1)
+    double zTotal = 0; //O(1)
+
+    //For each coordinate
+    for (int i = 0; i < vertices.size(); i++) { //O(v) *
+        //Convert to cartesian coordinates
+        tuple<double, double, double> xyzCoords = coordinatesToCartesian(vertices.at(i)); //O(1)
+
+        //Add each to the total
+        xTotal += get<0>(xyzCoords); //O(1)
+        yTotal += get<1>(xyzCoords); //O(1)
+        zTotal += get<2>(xyzCoords); //O(1)
     }
-    xTotal = xTotal / vertices.size();
-    yTotal = yTotal / vertices.size();
-    zTotal = zTotal / vertices.size();
-    return cartesianToCoordinates(tuple<double, double, double>(xTotal, yTotal, zTotal));
+
+    //Find the average of each coordinate
+    xTotal = xTotal / vertices.size(); //O(1)
+    yTotal = yTotal / vertices.size(); //O(1)
+    zTotal = zTotal / vertices.size(); //O(1)
+
+    //Convert the averaged coordinates to latitude and longitude and return it
+    return cartesianToCoordinates(tuple<double, double, double>(xTotal, yTotal, zTotal)); //O(1)
 }
 
-pair<pair<double, double>, double> verticesToMap(vector<pair<double, double>> vertices) {
-    pair<double, double> center = verticesToCenter(vertices);
+//Function that takes a set of coordinates and finds a circle at their midpoint that encompasses all of them
+pair<pair<double, double>, double> verticesToMap(const vector<pair<double, double>>& vertices) { //O(v) where v is the number of vertices to be averaged
+    //Find the geographic midpoint
+    pair<double, double> center = verticesToCenter(vertices); //O(v)
+
+    //Placeholder value for max radius
     double maxRadius = 0;
-    for (int i = 0; i < vertices.size(); i++) {
-        double distance = distanceBetween(center, vertices.at(i));
-        if (i == 0 || distance > maxRadius) {
-            maxRadius = distance;
+
+    //For each vertex, find which is farthest from the midpoint as that should be the radius in order to encompass every point
+    for (int i = 0; i < vertices.size(); i++) { //O(v) *
+        //Find distance from the current vertex to the midpoint
+        double distance = distanceBetween(center, vertices.at(i)); //O(1)
+
+        //If the first vertex or if the distance is greater, this is the new maximum
+        if (i == 0 || distance > maxRadius) { //O(1)
+            maxRadius = distance; //O(1)
         }
     }
-    return pair<pair<double, double>, double>(center, maxRadius);
+
+    //Return the midpoint and radius of the circle
+    return pair<pair<double, double>, double>(center, maxRadius); //O(1)
 }
 
-void findLocations(string tweet, vector<pair<double, double>>& coordinateList) {
-    ifstream file("cities1000.txt");
-    string city;
-    while (getline(file, city, '\t')) {
-        getline(file, city, '\t');
-        if (tweet.find(city) != string::npos) {
-            int count = 0;
-            string lat;
-            string lon;
-            while (count++ < 3) {
-                getline(file, lat, '\t');
+//Function that goes through a tweet, finding any cities mentioned in it and putting their coordinates into the list
+void findLocations(const string& tweet, vector<pair<double, double>>& coordinateList) { //O(c) or O(c + v) if resize where c is the number of characters in a tweet and v is the number of coordinates
+    //Data set of 139,698 cities with populations over 1000
+    ifstream file("cities1000.txt"); //O(1)
+
+    //String to hold the current city
+    string city; //O(1)
+
+    //While there are rows left
+    while (getline(file, city, '\t')) { //O(139698) = O(1) *
+        //Get the second column (contains the city name)
+        getline(file, city, '\t'); //O(1)
+
+        //If the tweet contains the city name
+        if (tweet.find(city) != string::npos) { //O(c) where c is the number of characters in the tweet
+            //Variables for the latitude and longitude
+            string lat; //O(1)
+            string lon; //O(1)
+
+            //Go 3 more columns, storing the latitude for this city
+            int count = 0; //O(1)
+            while (count++ < 3) { //O(3) = O(1) *
+                getline(file, lat, '\t'); //O(1)
             }
-            getline(file, lon, '\t');
-            coordinateList.push_back(pair<double, double>(stod(lat), stod(lon)));
+
+            //Get the next column, storing the longitude for this city
+            getline(file, lon, '\t'); //O(1)
+
+            //Convert to a pair of doubles, pushing back onto the coordinate list
+            coordinateList.push_back(pair<double, double>(stod(lat), stod(lon))); //O(1) or O(v) if resize
         }
-        getline(file, city, '\n');
+
+        //Go to the next line
+        getline(file, city, '\n'); //O(1)
     }
 }
 
-//bwead class is called: splay
+//Function that takes a given data structure (splay or graph), adding the gps coordinates from a tweet into it
 template<typename structure>
-void populateDataStructures(vector<string> tweets, structure data) {
-    vector<pair<double, double>> locations;
-    for (int i = 0; i < tweets.size(); i++) {
-        string tweet = tweets.at(i);
+void populateDataStructures(const vector<string>& tweets, structure& data) { //O(t * (c + v * d)) where t = number of tweets, c = number of characters in tweet, v = number of locations in tweet, and d = data structure complexity
+    //Vector to hold locations
+    vector<pair<double, double>> locations; //O(1)
 
-        findLocations(tweet, locations);
+    //For each tweet
+    for (int i = 0; i < tweets.size(); i++) { //O(t) *
+        //Get tweet
+        string tweet = tweets.at(i); //O(1)
+
+        //Find locations in tweet
+        findLocations(tweet, locations); //O(c) or O(c + v) if resize
     }
 
-    for (int i = 0; i < locations.size(); i++) {
-        data.addLocation(locations.at(i));
+    //For every location in every tweet
+    for (int i = 0; i < locations.size(); i++) { //O(t * v) *
+        //Add that location to the data structure
+        data.addLocation(locations.at(i)); //O(log V) amortized for splay, O(V) for adjacency graph = O(d)
     }
 }
 
 
 vector<string> bweadfunctionrandomprofile(int numberProfiles);
 vector<string> bweadfunctionLookup(string profilelink);
-string bweadfunctionRealLocation(string profileLink);
+string bweadfunctionRealLocation(const string& profileLink);
 
-pair<double, double> getRealLocation(string realLocation) {
-    vector<pair<double, double>> possibleLocations;
-    findLocations(realLocation, possibleLocations);
+//Function that takes the location field in their bio, and converts it to gps coordinates
+pair<double, double> getRealLocation(string realLocation) { //O(c) or O(c + v) if resize
+    //Vector to store possible locations
+    vector<pair<double, double>> possibleLocations; //O(1)
 
-    pair<double, double> location;
-    if (!possibleLocations.empty()) {
-        location = possibleLocations.at(0);
+    //Find gps coordinates of possible locations
+    findLocations(realLocation, possibleLocations); //O(c) or O(c + v) if resize
+
+    //Store selected location
+    pair<double, double> location; //O(1)
+
+    //If found at least one location
+    if (!possibleLocations.empty()) { //O(1)
+        //Select the first location
+        location = possibleLocations.at(0); //O(1)
     }
 
-    return location;
+    //Return the selected location
+    return location; //O(1)
 }
 
+//Function that takes a set of tweets, and returns a map of their predicted location
 template<typename structure>
-pair<pair<double, double>, double> generateMap(vector<string> tweets) {
-    structure data;
-    populateDataStructures<structure>(tweets, data);
-    vector<pair<double, double>> guess = data.getCentralLocation();
-    pair<pair<double, double>, double> circle = verticesToMap(guess);
-    return circle;
+pair<pair<double, double>, double> generateMap(const vector<string>& tweets) { //O(t * (c + v * d) + g) where t = number of tweets, c = number of characters in tweet, v = number of locations in tweet, d = data structure complexity for adding, and g = data structure complexity for calculating guess
+    //Create the data structure
+    structure data; //O(1)
+
+    //Add locations from tweets into the data structure
+    populateDataStructures<structure>(tweets, data); //O(t * (c + v * d))
+
+    //Get the coordinates of the guess from the data structure
+    vector<pair<double, double>> guess = data.getCentralLocation(); //O() for splay, O() for graph = O(g)
+
+    //Get the circle of the map from the guessed coordinates
+    pair<pair<double, double>, double> circle = verticesToMap(guess); //O(v)
+
+    //Return the circle of the map
+    return circle; //O(1)
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        return -1;
+//Main function that takes arguments and decides what to do
+int main(int argc, char* argv[]) { //O()
+    //Check if there is two arguments
+    if (argc != 3) { //O(1)
+        return -1; //O(1)
     }
-    string type = argv[1];
-    if (type == "accuracy") {
-        int number = stoi(argv[2]);
-        double accuracyAverageSplay = 0;
-        double accuracyAverageGraph = 0;
-        double timeAverageSplay = 0;
-        double timeAverageGraph = 0;
 
-        vector<string> profiles = bweadfunctionrandomprofile(number);
-        for (int i = 0; i < profiles.size(); i++) {
-            string profileLink = profiles.at(i);
-            vector<string> tweets = bweadfunctionLookup(profileLink);
-            string profileLocation = bweadfunctionRealLocation(profileLink);
-            pair<double, double> realLocation = getRealLocation(profileLocation);
+    //Set the type
+    string type = argv[1]; //O(1)
 
-            auto start = chrono::high_resolution_clock::now();
-            pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets);
-            auto stop = chrono::high_resolution_clock::now();
-            auto duration = duration_cast<chrono::microseconds>(stop - start);
-            timeAverageSplay += duration.count();
+    //If running accuracy test
+    if (type == "accuracy") { //O(1)
+        int number = stoi(argv[2]); //O(1)
 
-            start = chrono::high_resolution_clock::now();
-            pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets);
-            stop = chrono::high_resolution_clock::now();
-            duration = duration_cast<chrono::microseconds>(stop - start);
-            timeAverageGraph += duration.count();
+        //Variables to store statistics
+        double accuracyAverageSplay = 0; //O(1)
+        double accuracyAverageGraph = 0; //O(1)
+        double timeAverageSplay = 0; //O(1)
+        double timeAverageGraph = 0; //O(1)
 
-            accuracyAverageSplay += distanceBetween(splayCircle.first, realLocation);
-            accuracyAverageGraph += distanceBetween(graphCircle.first, realLocation);
+        //Get list of profiles
+        vector<string> profiles = bweadfunctionrandomprofile(number); //O()
+
+        //For every profile
+        for (int i = 0; i < profiles.size(); i++) { //O(p) *
+            //Get the current profile
+            string profileLink = profiles.at(i); //O(1)
+
+            //Get a list of every tweet by the profile
+            vector<string> tweets = bweadfunctionLookup(profileLink); //O()
+
+            //Get the location indicated in the profile bio
+            string profileLocation = bweadfunctionRealLocation(profileLink); //O()
+
+            //Determine the coordinates of the profile location
+            pair<double, double> realLocation = getRealLocation(profileLocation); //O()
+
+            //Start a timer
+            auto start = chrono::high_resolution_clock::now(); //O(1)
+
+            //Generate a guess for the splay tree
+            pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets); //O(t * (c + v * d) + g)
+
+            //Stop the timer
+            auto stop = chrono::high_resolution_clock::now(); //O(1)
+
+            //Find how long the splay data structure took, and add it to the total
+            auto duration = chrono::duration_cast<chrono::microseconds>(stop - start); //O(1)
+            timeAverageSplay += duration.count(); //O(1)
+
+            //Start a timer
+            start = chrono::high_resolution_clock::now(); //O(1)
+
+            //Generate a guess for the graph
+            pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets); //O(t * (c + v * d) + g)
+
+            //Stop the timer
+            stop = chrono::high_resolution_clock::now(); //O(1)
+
+            //Find how long the graph data structure took, and add it to the total
+            duration = chrono::duration_cast<chrono::microseconds>(stop - start); //O(1)
+            timeAverageGraph += duration.count(); //O(1)
+
+            //Find the distance between the guess and real location for each data structure, adding it to the total
+            accuracyAverageSplay += distanceBetween(splayCircle.first, realLocation); //O(1)
+            accuracyAverageGraph += distanceBetween(graphCircle.first, realLocation); //O(1)
         }
-        accuracyAverageSplay = accuracyAverageSplay / profiles.size();
-        accuracyAverageGraph = accuracyAverageGraph / profiles.size();
-        timeAverageSplay = timeAverageSplay / profiles.size();
-        timeAverageGraph = timeAverageGraph / profiles.size();
-        cout << accuracyAverageSplay << "\t" << timeAverageSplay << endl;
-        cout << accuracyAverageGraph << "\t" << timeAverageGraph << endl;
 
-    } else if (type == "map") {
-        string profileLink = argv[2];
-        vector<string> tweets = bweadfunctionLookup(profileLink);
-        pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets);
-        pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets);
-        cout << splayCircle.first.first << " " << splayCircle.first.second << "\t" << splayCircle.second << endl;
-        cout << graphCircle.first.first << " " << graphCircle.first.second << "\t" << graphCircle.second << endl;
-    } else {
-        return -1;
+        //Find the average distance and time for each profile for each data structure
+        accuracyAverageSplay = accuracyAverageSplay / profiles.size(); //O(1)
+        accuracyAverageGraph = accuracyAverageGraph / profiles.size(); //O(1)
+        timeAverageSplay = timeAverageSplay / profiles.size(); //O(1)
+        timeAverageGraph = timeAverageGraph / profiles.size(); //O(1)
+
+        //Output the average distance and time for each profile for each data structure
+        cout << accuracyAverageSplay << "\t" << timeAverageSplay << endl; //O(1)
+        cout << accuracyAverageGraph << "\t" << timeAverageGraph << endl; //O(1)
+
     }
-    return 0;
+    //Otherwise, if running map test
+    else if (type == "map") { //O(1)
+        //Get the link to the profile
+        string profileLink = argv[2]; //O(1)
+
+        //Get a list of every tweet
+        vector<string> tweets = bweadfunctionLookup(profileLink); //O()
+
+        //Get circles for each data structure
+        pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets); //O(t * (c + v * d) + g)
+        pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets); //O(t * (c + v * d) + g)
+
+        //Output the coordinates and radius for each circle
+        cout << splayCircle.first.first << " " << splayCircle.first.second << "\t" << splayCircle.second << endl; //O(1)
+        cout << graphCircle.first.first << " " << graphCircle.first.second << "\t" << graphCircle.second << endl; //O(1)
+    }
+    //Otherwise, invalid input
+    else { //O(1)
+        return -1; //O(1)
+    }
+
+    //End the program
+    return 0; //O(1)
 }
