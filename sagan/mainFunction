@@ -1,0 +1,53 @@
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        return -1;
+    }
+    string type = argv[1];
+    if (type == "accuracy") {
+        int number = stoi(argv[2]);
+        double accuracyAverageSplay = 0;
+        double accuracyAverageGraph = 0;
+        double timeAverageSplay = 0;
+        double timeAverageGraph = 0;
+
+        vector<string> profiles = bweadfunctionrandomprofile(number);
+        for (int i = 0; i < profiles.size(); i++) {
+            string profileLink = profiles.at(i);
+            vector<string> tweets = bweadfunctionLookup(profileLink);
+            string profileLocation = bweadfunctionRealLocation(profileLink);
+            pair<double, double> realLocation = getRealLocation(profileLocation);
+
+            auto start = chrono::high_resolution_clock::now();
+            pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets);
+            auto stop = chrono::high_resolution_clock::now();
+            auto duration = duration_cast<chrono::microseconds>(stop - start);
+            timeAverageSplay += duration.count();
+
+            start = chrono::high_resolution_clock::now();
+            pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets);
+            stop = chrono::high_resolution_clock::now();
+            duration = duration_cast<chrono::microseconds>(stop - start);
+            timeAverageGraph += duration.count();
+
+            accuracyAverageSplay += distanceBetween(splayCircle.first, realLocation);
+            accuracyAverageGraph += distanceBetween(graphCircle.first, realLocation);
+        }
+        accuracyAverageSplay = accuracyAverageSplay / profiles.size();
+        accuracyAverageGraph = accuracyAverageGraph / profiles.size();
+        timeAverageSplay = timeAverageSplay / profiles.size();
+        timeAverageGraph = timeAverageGraph / profiles.size();
+        cout << accuracyAverageSplay << "\t" << timeAverageSplay << endl;
+        cout << accuracyAverageGraph << "\t" << timeAverageGraph << endl;
+
+    } else if (type == "map") {
+        string profileLink = argv[2];
+        vector<string> tweets = bweadfunctionLookup(profileLink);
+        pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets);
+        pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets);
+        cout << splayCircle.first.first << " " << splayCircle.first.second << "\t" << splayCircle.second << endl;
+        cout << graphCircle.first.first << " " << graphCircle.first.second << "\t" << graphCircle.second << endl;
+    } else {
+        return -1;
+    }
+    return 0;
+}
