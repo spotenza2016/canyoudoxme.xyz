@@ -1,3 +1,4 @@
+//Libraries
 #include <vector>
 #include <tuple>
 #include <string>
@@ -6,6 +7,8 @@
 #include <cmath>
 #include <chrono>
 using namespace std;
+
+
 
 //Header for distance between function
 double distanceBetween(const pair<double, double>& lhs, const pair<double, double>& rhs);
@@ -76,7 +79,7 @@ public:
             //Stores the node in the vertex vector
             vertices.push_back(currentNode); //O(1) or O(V) if resize
         }
-        //Otherwise, if this is a unique location
+            //Otherwise, if this is a unique location
         else if (closest->storedLocation != insertedLocation) { //O(1)
             //Create a new node
             Node* currentNode = new Node; //O(1)
@@ -94,6 +97,9 @@ public:
             //Add this distance to each node's distance vector
             currentNode->distance.push_back(distance); //O(1) or O(V) if resize
             closest->distance.push_back(distance); //O(1) or O(V) if resize
+
+            //Add to the vertices list
+            vertices.push_back(currentNode);
         }
     }
 
@@ -109,7 +115,7 @@ public:
                 //Set this as the new most central vertex
                 central = vertices.at(i); //O(1)
             }
-            //Otherwise, if there is a tie
+                //Otherwise, if there is a tie
             else if (vertices.at(i)->adjacencyList.size() == central->adjacencyList.size()) { //O(1)
                 //Add up the distances for every edge in the current vertex
                 double currentTotal = 0; //O(1)
@@ -133,6 +139,10 @@ public:
         //Vector for every location
         vector<pair<double, double>> locations; //O(1)
 
+        if (central == nullptr) {
+            return locations;
+        }
+
         //Push back the most central location
         locations.push_back(central->storedLocation); //O(1) or O(V) if resize
 
@@ -143,6 +153,162 @@ public:
 
         //Return the locations
         return locations; //O(1)
+    }
+};
+
+class splay
+{
+private:
+    struct node {
+        pair<double, double> coordinates;
+        string name = "default";
+        int frequency = 0;
+        node* left =  nullptr;
+        node* right = nullptr;
+        node* parent = nullptr;
+        node* prev = nullptr;
+        node() {
+            left = nullptr;
+            right = nullptr;
+            parent = nullptr;
+            prev = nullptr;
+            frequency = 0;
+            name = "none";
+        }
+    };
+
+public:
+
+    node* root = nullptr;
+    node* getRoot()
+    {
+        return root;
+    }
+    node* find(string s, node* n)
+    {
+        if (n == nullptr)
+        {
+            return nullptr;
+        }
+        if (n->name == s) return n;
+        node* ans =find(s, n->left);
+        ans =find(s, n->right);
+        return ans;
+    }
+    void splayFunction(node* n)
+    {
+        if (n->parent == nullptr) {
+            return;
+        }
+        node* temp = n->parent;
+        if (n->parent->left = n) //zig, single right
+        {
+            n->right->parent = n->parent;
+            n->parent->left = n->right;
+            n->right = n->parent;
+            n->parent = n->parent->parent;
+            temp->parent = n;
+        }
+        else //zag, single left
+        {
+            n->left->parent = n->parent;
+            n->parent->right = n->left;
+            n->left = n->parent;
+            n->parent = n->parent->parent;
+            temp->parent = n;
+        }
+        if (temp != root) splayFunction(n);
+        else root = n;
+
+
+    }
+    ~splay() {
+        deleteAll(root);
+    }
+
+    void deleteAll(node* root) {
+        if (root == nullptr) {
+            return;
+        }
+        if (root->left != nullptr) {
+            deleteAll(root->left);
+        }
+        if (root->right != nullptr) {
+            deleteAll(root->right);
+        }
+
+        delete root;
+    }
+
+    void addLocation(pair<double, double> coords) {
+        node* newNode = new node;
+        newNode->frequency = 0;
+        newNode->coordinates = coords;
+        insert(newNode);
+    }
+
+    void insert(node* n) // splay tree should grab the nodes nearby since it should theoretically have accessed nodes  be close to eachother if in same area
+    {
+        //default to nodes on the right having higher numbers (count)
+        if (root == nullptr) {
+            root = n;
+            return;
+        }
+        node* found = find(n->name, root); //make sure to delete lol
+        if (found == nullptr)//inserts on top
+        {
+            node* move = root;
+            while (move != nullptr) //here maybe do coordinates to get distances and scale them this way
+            {
+                move->prev = move;
+                n->prev = move->prev;
+                if (move->right != nullptr && move->left != nullptr)move = move->right;
+                else if (move->right != nullptr) move = move->left;
+                else move = move->right;
+
+            }
+            splayFunction(n);
+            //splayFunction here
+        }
+        else
+        {
+            found->frequency++;
+            delete n;
+            splayFunction(found);
+        }
+    }
+    vector<pair<double, double>> getCentralLocation()
+    {
+        if (root == nullptr) return vector<pair<double, double>>();
+        vector<pair<double, double>> ans;
+        ans.push_back(root->coordinates);
+        node* r = root->right;
+        node* l = root->left;
+        for (int i = 0; i < 10; i++)
+        {
+            if (r != nullptr)
+            {
+                for (int j = 0; j < r->frequency; j++)
+                {
+                    ans.push_back(r->coordinates);
+                }
+                if (r->left != nullptr) ans.push_back(r->left->coordinates);
+                if (r->right != nullptr) r = r->right;
+                else r = r->left;
+            }
+            if (l != nullptr)
+            {
+                for (int j = 0; j < l->frequency; j++)
+                {
+                    ans.push_back(l->coordinates);
+                }
+                if (l->left != nullptr) ans.push_back(l->left->coordinates);
+                if (l->right != nullptr) l = l->right;
+                else l = l->left;
+            }
+        }
+        return ans;
+
     }
 };
 
@@ -306,10 +472,55 @@ void populateDataStructures(const vector<string>& tweets, structure& data) { //O
     }
 }
 
+string getUserID (string profilelink) {
+    int start = profilelink.find("twitter.com/");
+    if (start == string::npos) {
+        return profilelink;
+    }
+    start += 12;
+    int length = 0;
+    for (int i = start; i < profilelink.size(); i++) {
+        if (profilelink.at(i) != '/') {
+            length++;
+        }
+    }
+    return profilelink.substr(start, length);
+}
 
-vector<string> bweadfunctionrandomprofile(int numberProfiles);
-vector<string> bweadfunctionLookup(string profilelink);
-string bweadfunctionRealLocation(const string& profileLink);
+void generateCommand(string command) {
+    char* charArray = new char[command.size()];
+    for (int i = 0; i < command.size(); i++) {
+        charArray[i] = command.at(i);
+    }
+    system(charArray);
+    delete[] charArray;
+}
+
+vector<string> getData() {
+    vector<string> fileData;
+    ifstream data("data.txt");
+    string currData;
+    while (getline(data, currData)) {
+        fileData.push_back(currData);
+    }
+    data.close();
+    return fileData;
+}
+
+string randomProfile() {
+    generateCommand("Finder.exe random profile generate");
+    return getData().at(0);
+}
+
+vector<string> lookupProfile(const string& profilelink) {
+    generateCommand("Finder.exe " + getUserID(profilelink));
+    return getData();
+}
+
+string getBioLocation(const string& profilelink) {
+    generateCommand("Finder.exe " + getUserID(profilelink) + "bioLocation");
+    return getData().at(0);
+}
 
 //Function that takes the location field in their bio, and converts it to gps coordinates
 pair<double, double> getRealLocation(string realLocation) { //O(c) or O(c + v) if resize
@@ -334,14 +545,14 @@ pair<double, double> getRealLocation(string realLocation) { //O(c) or O(c + v) i
 
 //Function that takes a set of tweets, and returns a map of their predicted location
 template<typename structure>
-pair<pair<double, double>, double> generateMap(const vector<string>& tweets) { //O(t * (c + v * d) + g) where t = number of tweets, c = number of characters in tweet, v = number of locations in tweet, d = data structure complexity for adding, and g = data structure complexity for calculating guess
+pair<pair<double, double>, double> generateMap(const vector<string>& tweets) { //O(t * (c + v * d) + g) where t = number of tweets, c = number of characters in tweet, v = number of locations in tweet, d = data structure complexity for adding, and g = data structure complexity for calculating getCentralLocation
     //Create the data structure
     structure data; //O(1)
 
     //Add locations from tweets into the data structure
     populateDataStructures<structure>(tweets, data); //O(t * (c + v * d))
 
-    //Get the coordinates of the guess from the data structure
+    //Get the coordinates of the getCentralLocation from the data structure
     vector<pair<double, double>> guess = data.getCentralLocation(); //O() for splay, O() for graph = O(g)
 
     //Get the circle of the map from the guessed coordinates
@@ -372,7 +583,10 @@ int main(int argc, char* argv[]) { //O()
         double timeAverageGraph = 0; //O(1)
 
         //Get list of profiles
-        vector<string> profiles = bweadfunctionrandomprofile(number); //O()
+        vector<string> profiles;
+        for (int i = 0; i < number; i++) {
+            profiles.push_back(randomProfile());
+        }
 
         //For every profile
         for (int i = 0; i < profiles.size(); i++) { //O(p) *
@@ -380,10 +594,10 @@ int main(int argc, char* argv[]) { //O()
             string profileLink = profiles.at(i); //O(1)
 
             //Get a list of every tweet by the profile
-            vector<string> tweets = bweadfunctionLookup(profileLink); //O()
+            vector<string> tweets = lookupProfile(profileLink); //O()
 
             //Get the location indicated in the profile bio
-            string profileLocation = bweadfunctionRealLocation(profileLink); //O()
+            string profileLocation = getBioLocation(profileLink); //O()
 
             //Determine the coordinates of the profile location
             pair<double, double> realLocation = getRealLocation(profileLocation); //O()
@@ -391,7 +605,7 @@ int main(int argc, char* argv[]) { //O()
             //Start a timer
             auto start = chrono::high_resolution_clock::now(); //O(1)
 
-            //Generate a guess for the splay tree
+            //Generate a getCentralLocation for the splay tree
             pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets); //O(t * (c + v * d) + g)
 
             //Stop the timer
@@ -404,7 +618,7 @@ int main(int argc, char* argv[]) { //O()
             //Start a timer
             start = chrono::high_resolution_clock::now(); //O(1)
 
-            //Generate a guess for the graph
+            //Generate a getCentralLocation for the graph
             pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets); //O(t * (c + v * d) + g)
 
             //Stop the timer
@@ -414,7 +628,7 @@ int main(int argc, char* argv[]) { //O()
             duration = chrono::duration_cast<chrono::microseconds>(stop - start); //O(1)
             timeAverageGraph += duration.count(); //O(1)
 
-            //Find the distance between the guess and real location for each data structure, adding it to the total
+            //Find the distance between the getCentralLocation and real location for each data structure, adding it to the total
             accuracyAverageSplay += distanceBetween(splayCircle.first, realLocation); //O(1)
             accuracyAverageGraph += distanceBetween(graphCircle.first, realLocation); //O(1)
         }
@@ -426,27 +640,27 @@ int main(int argc, char* argv[]) { //O()
         timeAverageGraph = timeAverageGraph / profiles.size(); //O(1)
 
         //Output the average distance and time for each profile for each data structure
-        cout << accuracyAverageSplay << "\t" << timeAverageSplay << endl; //O(1)
-        cout << accuracyAverageGraph << "\t" << timeAverageGraph << endl; //O(1)
+        cout << accuracyAverageSplay << " " << timeAverageSplay << endl; //O(1)
+        cout << accuracyAverageGraph << " " << timeAverageGraph << endl; //O(1)
 
     }
-    //Otherwise, if running map test
+        //Otherwise, if running map test
     else if (type == "map") { //O(1)
         //Get the link to the profile
         string profileLink = argv[2]; //O(1)
 
         //Get a list of every tweet
-        vector<string> tweets = bweadfunctionLookup(profileLink); //O()
+        vector<string> tweets = lookupProfile(profileLink); //O()
 
         //Get circles for each data structure
         pair<pair<double, double>, double> splayCircle = generateMap<splay>(tweets); //O(t * (c + v * d) + g)
         pair<pair<double, double>, double> graphCircle = generateMap<LocationAdjacencyGraph>(tweets); //O(t * (c + v * d) + g)
 
         //Output the coordinates and radius for each circle
-        cout << splayCircle.first.first << " " << splayCircle.first.second << "\t" << splayCircle.second << endl; //O(1)
-        cout << graphCircle.first.first << " " << graphCircle.first.second << "\t" << graphCircle.second << endl; //O(1)
+        cout << splayCircle.first.first << " " << splayCircle.first.second << " " << splayCircle.second << endl; //O(1)
+        cout << graphCircle.first.first << " " << graphCircle.first.second << " " << graphCircle.second << endl; //O(1)
     }
-    //Otherwise, invalid input
+        //Otherwise, invalid input
     else { //O(1)
         return -1; //O(1)
     }
