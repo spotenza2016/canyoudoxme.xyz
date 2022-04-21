@@ -156,9 +156,12 @@ public:
     }
 };
 
+//splay class
 class splay
 {
+//Private members
 private:
+    //Basic node class
     struct node {
         pair<double, double> coordinates;
         string name = "default";
@@ -177,13 +180,16 @@ private:
         }
     };
 
+//Public members
 public:
-
+    //Root variable and getter
     node* root = nullptr;
     node* getRoot()
     {
         return root;
     }
+
+    //Find the node with the proper name
     node* find(string s, node* n)
     {
         if (n == nullptr)
@@ -195,6 +201,8 @@ public:
         ans =find(s, n->right);
         return ans;
     }
+
+    //Splay function for splay tree
     void splayFunction(node* n)
     {
         if (n->parent == nullptr) {
@@ -222,10 +230,13 @@ public:
 
 
     }
+
+    //Destructor
     ~splay() {
         deleteAll(root);
     }
 
+    //For every node, deletes it
     void deleteAll(node* root) {
         if (root == nullptr) {
             return;
@@ -240,6 +251,7 @@ public:
         delete root;
     }
 
+    //Creates a new node for the tree
     void addLocation(pair<double, double> coords) {
         node* newNode = new node;
         newNode->frequency = 0;
@@ -247,6 +259,7 @@ public:
         insert(newNode);
     }
 
+    //Inserts a new node into the tree
     void insert(node* n) // splay tree should grab the nodes nearby since it should theoretically have accessed nodes  be close to eachother if in same area
     {
         //default to nodes on the right having higher numbers (count)
@@ -277,6 +290,8 @@ public:
             splayFunction(found);
         }
     }
+
+    //Make a guess at the central locations of the user's location
     vector<pair<double, double>> getCentralLocation()
     {
         if (root == nullptr) return vector<pair<double, double>>();
@@ -472,54 +487,113 @@ void populateDataStructures(const vector<string>& tweets, structure& data) { //O
     }
 }
 
+//Get the user id from a link
 string getUserID (string profilelink) {
+    //Get the start of the URL
     int start = profilelink.find("twitter.com/");
+
+    //If doesn't exist, assume that a user ID was given
     if (start == string::npos) {
         return profilelink;
     }
+
+    //Set to after the twitter.com/
     start += 12;
+
+    //Default length
     int length = 0;
+
+    //For every character until the /, add 1 to length
     for (int i = start; i < profilelink.size(); i++) {
         if (profilelink.at(i) != '/') {
             length++;
         }
     }
+
+    //Return the user ID
     return profilelink.substr(start, length);
 }
 
+
+//Function that generates the command into a character array
 void generateCommand(string command) {
+    //New character array
     char* charArray = new char[command.size()];
+
+    //For every character, put it in the array
     for (int i = 0; i < command.size(); i++) {
         charArray[i] = command.at(i);
     }
+
+    //Execute the command
     system(charArray);
+
+    //Delete the character array
     delete[] charArray;
 }
 
+//Function that gets data
 vector<string> getData() {
+    //Data holder
     vector<string> fileData;
+
+    //Open the file
     ifstream data("data.txt");
+
+    //Push every line into data
     string currData;
     while (getline(data, currData)) {
         fileData.push_back(currData);
     }
+
+    //Close the file
     data.close();
+
+    //Return the data
     return fileData;
 }
 
+//Looks up a random profile
 string randomProfile() {
+    //Generate the command
     generateCommand("Finder.exe random profile generate");
-    return getData().at(0);
+
+    //Get the data
+    vector<string> data = getData();
+
+    //If there is data, return the first
+    if (!data.empty()) {
+        return data.at(0);
+    }
+
+    //Otherwise, return an empty string
+    return string();
 }
 
+//Looks up a specific profile
 vector<string> lookupProfile(const string& profilelink) {
+    //Generate the command
     generateCommand("Finder.exe " + getUserID(profilelink));
+
+    //Get the data
     return getData();
 }
 
+//Get the location in the profile's bio
 string getBioLocation(const string& profilelink) {
+    //Generate the command
     generateCommand("Finder.exe " + getUserID(profilelink) + "bioLocation");
-    return getData().at(0);
+
+    //Get the data
+    vector<string> data = getData();
+
+    //If there is data, return it
+    if (!data.empty()) {
+        return data.at(0);
+    }
+
+    //Otherwise, return an empty string
+    return string();
 }
 
 //Function that takes the location field in their bio, and converts it to gps coordinates
@@ -586,6 +660,10 @@ int main(int argc, char* argv[]) { //O()
         vector<string> profiles;
         for (int i = 0; i < number; i++) {
             profiles.push_back(randomProfile());
+        }
+
+        if (profiles.size() == 0) {
+            return 0;
         }
 
         //For every profile
