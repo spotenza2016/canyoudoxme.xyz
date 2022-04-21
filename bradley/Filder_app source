@@ -1,0 +1,60 @@
+const name = process.argv.slice(2);
+const random = process.argv.slice(3);
+
+var Twit = require('twit')
+const fs = require("fs");
+var T = new Twit({
+    consumer_key:         'coO1IyfiITlmgr2RrxzHwiAtW',
+    consumer_secret:      'Dfe7AnynDEiwWL13I2F839CsL2WpBMC2yWG1buDQGGRMO8vQCt',
+    access_token:         '796095365284069376-bs5fawV7w6hbqZOyg4jf8lQGipLhJNY',
+    access_token_secret:  '6Gp6HlIznoazj4j89iX6wts4LMwLxDwlTQwLJhlVM3e0L',
+
+    strictSSL:            true,     // optional - requires SSL certificates to be valid.
+})
+var t
+var num
+if (name == "random" || random != "")
+{
+
+    T.get('statuses/sample', {
+
+            count: 3200
+
+        }, function (err, data, response) {
+            const fs = require('fs')
+            fs.writeFile("data.txt", data, function (err) {
+                if (err) {
+                    console.log(err)
+                }
+            })
+        });
+    }
+
+
+else {
+    for (let i = 0; i < 5; i++) {
+        T.get('statuses/user_timeline', {
+            screen_name: name,
+            count: 3200,
+            max_id: num,
+            exclude_replies: true,
+            include_retweets: false,
+            trim_user:true
+
+        }, function (err, data, response) {
+            t += data
+            num = t.substring(t.lastIndexOf('\n'))
+            const fs = require('fs')
+            fs.writeFile("data.txt", t, function (err) {
+                if (err) {
+                    console.log(err)
+                }
+            })
+
+
+        });
+
+    }
+
+
+}
