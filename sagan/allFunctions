@@ -8,7 +8,7 @@
 #include <chrono>
 using namespace std;
 
-
+#define M_PI 3.14159265358979323846
 
 //Header for distance between function
 double distanceBetween(const pair<double, double>& lhs, const pair<double, double>& rhs);
