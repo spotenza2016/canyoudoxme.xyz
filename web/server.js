@@ -5,6 +5,9 @@ var fs = require('fs');
 const com = require('./public/com');
 const { runInNewContext } = require('vm');
 const router = express.Router();
+const port=3000;
+const hostname = '127.0.0.1';
+
 
 //useful for sending data between files
 app.use(express.json()); 
@@ -31,31 +34,29 @@ var mime = {
 app.post('/public/com.js', function(req, res) {
     var execFile = require('child_process').execFile;
     //location of built c++ file (not relative)
-    var program = "C:/Users/321fi/Documents/Spring_2022/DataStructuresAndAlgorithms/Project3/Frontend/public/integrate/c++/build/Release/standalone.exe";
+    var program = "./public/integrate/c++/main.out";
 
     // data from the browser
     var tprof = [];
     tprof.push("map", req.body.link);
-    var testDeal = ["24.3 3243 324.3", "43.4 42 95.4"];
     //send in twitter profile, receive locations
     var child = execFile(program, tprof,
       function (error, stdout, stderr) {
-       
+        console.log(stdout);
         var mapdata = stdout.split("\n");
-
-        var splay = mapdata[0].split(" ")
+        console.log(mapdata)
+        var splay = mapdata[1].split(" ")
                                 .map(function (line) {
-                                    console.log(line);
                                     return parseFloat(line);
                                   });
-        var graph = mapdata[1].split(" ")
+        console.log(splay);
+        var graph = mapdata[2].split(" ")
                            .map(function (line) {
-                            console.log(line);
                              return parseFloat(line);
                            });
 
         //return data to call
-
+        console.log(graph);
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({
           splay: splay, graph: graph
@@ -88,7 +89,7 @@ app.get('*', function (req, res) {
 });
 
 app.listen(3000, function () {
-    console.log('Listening on http://localhost:3000/');
+    console.log('Listening on ' + hostname + ':' + port);
 });
 
 
