@@ -22,7 +22,7 @@ if  len(sys.argv) == 2:
     maxID = tweets[len(tweets) - 1].id - 1
     
     #While under the tweet requirement and while tweets remain
-    while numTweets < 15:       
+    while numTweets < 200:       
         #Get new tweets
         if numTweets != 0:
             tweets = api.user_timeline(screen_name = sys.argv[1], count = 20, max_id = maxID, exclude_replies = True, include_rts = False)
