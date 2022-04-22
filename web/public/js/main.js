@@ -44,7 +44,7 @@ $(document).ready(function () {
             radius = result.splay[2];
             lattitude_g = result.graph[0];
             longitude_g = result.graph[1];
-            radius = result.splay[2];
+            radius_g = result.graph[2];
             
             //refresh map
             initMap();
@@ -57,15 +57,15 @@ $(document).ready(function () {
 
 function initMap() {
     // location for splay
-    const location = { lat: lattitude, lng: longitude };
+    const location_s = { lat: lattitude, lng: longitude };
     // center location for splay
     const map = new google.maps.Map(document.getElementById("map"), {
       zoom: 8,
-      center: location,
+      center: location_s,
     });
     // The marker location for splay
     const marker = new google.maps.Marker({
-      position: location,
+      position: location_s,
       map: map,
     });
   
